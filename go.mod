@@ -1,4 +1,4 @@
-module github.com/fabianvf/kcp-cr-example
+module github.com/kcp-dev/controller-runtime-example
 
 go 1.17
 
