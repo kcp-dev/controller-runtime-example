@@ -19,9 +19,9 @@ package main
 import (
 	"os"
 
-	"github.com/fabianvf/kcp-cr-example/controllers"
 	kcpcache "github.com/kcp-dev/apimachinery/pkg/cache"
 	kcpclient "github.com/kcp-dev/apimachinery/pkg/client"
+	"github.com/kcp-dev/controller-runtime-example/controllers"
 	"github.com/kcp-dev/logicalcluster"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
