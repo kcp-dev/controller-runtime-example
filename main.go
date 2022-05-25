@@ -17,15 +17,15 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"os"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
+	"github.com/fabianvf/kcp-cr-example/controllers"
 	kcpcache "github.com/kcp-dev/apimachinery/pkg/cache"
 	kcpclient "github.com/kcp-dev/apimachinery/pkg/client"
 	"github.com/kcp-dev/logicalcluster"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
@@ -34,52 +34,36 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-
-	"sigs.k8s.io/controller-runtime/pkg/kcp"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 var (
+	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
 
-type reconciler struct {
-	client.Client
-	scheme *runtime.Scheme
-}
-
-func (r *reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx).WithValues("cluster", req.ObjectKey.Cluster.String())
-
-	ctx = kcpclient.WithCluster(ctx, req.ObjectKey.Cluster)
-
-	var configmap corev1.ConfigMap
-	if err := r.Get(ctx, req.ObjectKey, &configmap); err != nil {
-		log.Error(err, "unable to get configmap")
-		return ctrl.Result{}, err
-	}
-	log.Info("Retrieved configmap")
-
-	return ctrl.Result{}, nil
+func init() {
+	utilruntime.Must(corev1.AddToScheme(scheme))
 }
 
 func main() {
-
 	ctrl.SetLogger(zap.New())
 
 	cfg := ctrl.GetConfigOrDie()
+
 	httpClient, err := rest.HTTPClientFor(cfg)
 	if err != nil {
 		setupLog.Error(err, "unable to build http client")
 		os.Exit(1)
 	}
-	clusterRoundTripper := kcpclient.NewClusterRoundTripper(httpClient.Transport)
-	httpClient.Transport = clusterRoundTripper
+
+	httpClient.Transport = kcpclient.NewClusterRoundTripper(httpClient.Transport)
+
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme:         scheme,
 		LeaderElection: false,
+		// LeaderElectionNamespace: "default",
+		// LeaderElectionID:        "kcp-example",
 		NewCache: func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
 			c := rest.CopyConfig(config)
 			c.Host += "/clusters/*"
@@ -96,23 +80,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = corev1.AddToScheme(mgr.GetScheme())
-	if err != nil {
-		setupLog.Error(err, "unable to add scheme")
-		os.Exit(1)
-	}
-
-	c, err := controller.New("kcp-controller", mgr, controller.Options{
-		Reconciler: &reconciler{
-			Client: mgr.GetClient(),
-			scheme: mgr.GetScheme(),
-		}})
-	if err != nil {
-		setupLog.Error(err, "unable to set up individual controller")
-		os.Exit(1)
-	}
-	if err := c.Watch(&source.Kind{Type: &corev1.ConfigMap{}}, &kcp.EnqueueRequestForObject{}); err != nil {
-		setupLog.Error(err, "unable to watch configmaps")
+	if err = (&controllers.ConfigMapReconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ConfigMap")
 		os.Exit(1)
 	}
 
