@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"flag"
 	"os"
 
 	kcpcache "github.com/kcp-dev/apimachinery/pkg/cache"
@@ -26,6 +27,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
@@ -38,18 +40,27 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme            = runtime.NewScheme()
+	setupLog          = ctrl.Log.WithName("setup")
+	kubeconfigContext string
 )
 
 func init() {
 	utilruntime.Must(corev1.AddToScheme(scheme))
+
+	flag.StringVar(&kubeconfigContext, "context", "", "kubeconfig context")
 }
 
 func main() {
+	flag.Parse()
+
 	ctrl.SetLogger(zap.New())
 
-	cfg := ctrl.GetConfigOrDie()
+	cfg, err := config.GetConfigWithContext(kubeconfigContext)
+	if err != nil {
+		setupLog.Error(err, "unable to get rest config")
+		os.Exit(1)
+	}
 
 	httpClient, err := rest.HTTPClientFor(cfg)
 	if err != nil {
