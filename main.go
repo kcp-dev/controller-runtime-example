@@ -20,22 +20,16 @@ import (
 	"flag"
 	"os"
 
-	kcpcache "github.com/kcp-dev/apimachinery/pkg/cache"
-	kcpclient "github.com/kcp-dev/apimachinery/pkg/client"
 	"github.com/kcp-dev/controller-runtime-example/controllers"
-	"github.com/kcp-dev/logicalcluster"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	"sigs.k8s.io/controller-runtime/pkg/kcp"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/cluster"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
@@ -62,29 +56,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	httpClient, err := rest.HTTPClientFor(cfg)
-	if err != nil {
-		setupLog.Error(err, "unable to build http client")
-		os.Exit(1)
-	}
-
-	httpClient.Transport = kcpclient.NewClusterRoundTripper(httpClient.Transport)
-
-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+	mgr, err := kcp.NewClusterAwareManager(cfg, ctrl.Options{
 		Scheme:         scheme,
 		LeaderElection: false,
-		// LeaderElectionNamespace: "default",
-		// LeaderElectionID:        "kcp-example",
-		NewCache: func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
-			c := rest.CopyConfig(config)
-			c.Host += "/clusters/*"
-			opts.KeyFunction = kcpcache.ClusterAwareKeyFunc
-			return cache.New(c, opts)
-		},
-		NewClient: func(cache cache.Cache, config *rest.Config, opts client.Options, uncachedObjects ...client.Object) (client.Client, error) {
-			opts.HTTPClient = httpClient
-			return cluster.DefaultNewClient(cache, config, opts, uncachedObjects...)
-		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -99,7 +73,7 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
-	if err := mgr.Start(kcpclient.WithCluster(ctrl.SetupSignalHandler(), logicalcluster.Wildcard)); err != nil {
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
