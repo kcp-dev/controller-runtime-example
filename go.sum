@@ -294,8 +294,8 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/kcp-dev/apimachinery v0.0.0-20220518152549-f62703561e55 h1:nwrXHxVkTQ9BI6slgqWgg8CVC+7AbJR02byYq+iBOUg=
 github.com/kcp-dev/apimachinery v0.0.0-20220518152549-f62703561e55/go.mod h1:FIzhTU6DM3HYZhGv8w/1S/mbmSv1HzulZpjr/1/6i/I=
-github.com/kcp-dev/controller-runtime v0.11.3-0.20220525203614-3f3188c144db h1:MLND8RHST1F2JN7xC7l76YW66WlCz0RV0DPNe1UqoNg=
-github.com/kcp-dev/controller-runtime v0.11.3-0.20220525203614-3f3188c144db/go.mod h1:7iVCCTX1SSLJl8cR7UQcwgQsZezCW+wv8VxeoYUGAX0=
+github.com/kcp-dev/controller-runtime v0.11.3-0.20220526160644-dde7624d3976 h1:pjIWLTdYEZqpbFCNNEqna78X6KYsjrb+7BmJecIeX6k=
+github.com/kcp-dev/controller-runtime v0.11.3-0.20220526160644-dde7624d3976/go.mod h1:7iVCCTX1SSLJl8cR7UQcwgQsZezCW+wv8VxeoYUGAX0=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20220524063253-5bb0eeecf2cf h1:b3UxxmQEB0ZGXGmlGOhFPElpaLPoEEjNneH6ipn4WdE=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/api v0.0.0-20220524063253-5bb0eeecf2cf/go.mod h1:YaTOAfRXJ+yMgQtYx2JxXdxGGoAonb1tg1rTLU0IT54=
 github.com/kcp-dev/kubernetes/staging/src/k8s.io/apimachinery v0.0.0-20220524063253-5bb0eeecf2cf h1:BiQgcrehqYiTG507kL3GFJtR5ni/fztwll9VodvlEd4=
