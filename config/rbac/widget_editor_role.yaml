@@ -1,0 +1,24 @@
+# permissions for end users to edit widgets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: widget-editor-role
+rules:
+- apiGroups:
+  - data.my.domain
+  resources:
+  - widgets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - data.my.domain
+  resources:
+  - widgets/status
+  verbs:
+  - get

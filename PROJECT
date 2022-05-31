@@ -1,0 +1,16 @@
+domain: my.domain
+layout:
+- go.kubebuilder.io/v3
+projectName: controller-runtime-example
+repo: github.com/kcp-dev/controller-runtime-example
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: my.domain
+  group: data
+  kind: Widget
+  path: github.com/kcp-dev/controller-runtime-example/api/v1alpha1
+  version: v1alpha1
+version: "3"

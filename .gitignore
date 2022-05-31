@@ -18,3 +18,5 @@ vendor/
 .idea
 
 hack/tools
+
+bin/

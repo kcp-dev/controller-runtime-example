@@ -1,0 +1,6 @@
+apiVersion: data.my.domain/v1alpha1
+kind: Widget
+metadata:
+  name: widget-sample
+spec:
+  # TODO(user): Add fields here
