@@ -1,0 +1,20 @@
+# permissions for end users to view widgets.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: widget-viewer-role
+rules:
+- apiGroups:
+  - data.my.domain
+  resources:
+  - widgets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - data.my.domain
+  resources:
+  - widgets/status
+  verbs:
+  - get
