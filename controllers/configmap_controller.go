@@ -41,14 +41,14 @@ type ConfigMapReconciler struct {
 }
 
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := log.FromContext(ctx).WithValues("cluster", req.ObjectKey.Cluster.String())
+	log := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 
-	ctx = kcpclient.WithCluster(ctx, req.ObjectKey.Cluster)
+	ctx = kcpclient.WithCluster(ctx, logicalcluster.New(req.ClusterName))
 
 	// Test get
 	var configMap corev1.ConfigMap
 
-	if err := r.Get(ctx, req.ObjectKey, &configMap); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &configMap); err != nil {
 		log.Error(err, "unable to get configmap")
 		return ctrl.Result{}, nil
 	}
@@ -85,10 +85,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	nsName, exists := configMap.Data["namespace"]
 	if exists {
 		var namespace corev1.Namespace
-		nsKey := client.ObjectKey{
-			NamespacedName: types.NamespacedName{Name: nsName},
-			Cluster:        req.ObjectKey.Cluster,
-		}
+		nsKey := types.NamespacedName{Name: nsName}
 
 		if err := r.Get(ctx, nsKey, &namespace); err != nil {
 			if !apierrors.IsNotFound(err) {
