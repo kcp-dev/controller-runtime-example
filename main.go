@@ -157,11 +157,7 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 
 	var apiExport apisv1alpha1.APIExport
 
-	if err := apiExportClient.Get(ctx, client.ObjectKey{
-		NamespacedName: types.NamespacedName{
-			Name: apiExportName,
-		},
-	}, &apiExport); err != nil {
+	if err := apiExportClient.Get(ctx, types.NamespacedName{Name: apiExportName}, &apiExport); err != nil {
 		return nil, fmt.Errorf("error getting APIExport %q: %w", apiExportName, err)
 	}
 

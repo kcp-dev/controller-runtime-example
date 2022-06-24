@@ -20,6 +20,7 @@ import (
 	"context"
 
 	kcpclient "github.com/kcp-dev/apimachinery/pkg/client"
+	"github.com/kcp-dev/logicalcluster"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -45,7 +46,7 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Include the clusterName from req.ObjectKey in the logger, similar to the namespace and name keys that are already
 	// there.
-	logger = logger.WithValues("clusterName", req.ObjectKey.Cluster.String())
+	logger = logger.WithValues("clusterName", req.ClusterName)
 
 	// You probably wouldn't need to do this, but if you wanted to list all instances across all logical clusters:
 	var allWidgets datav1alpha1.WidgetList
@@ -56,11 +57,11 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	logger.Info("Listed all widgets across all workspaces", "count", len(allWidgets.Items))
 
 	// Add the logical cluster to the context
-	ctx = kcpclient.WithCluster(ctx, req.ObjectKey.Cluster)
+	ctx = kcpclient.WithCluster(ctx, logicalcluster.New(req.ClusterName))
 
 	logger.Info("Getting widget")
 	var w datav1alpha1.Widget
-	if err := r.Get(ctx, req.ObjectKey, &w); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, &w); err != nil {
 		if errors.IsNotFound(err) {
 			// Normal - was deleted
 			return ctrl.Result{}, nil
