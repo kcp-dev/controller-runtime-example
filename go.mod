@@ -3,7 +3,7 @@ module github.com/kcp-dev/controller-runtime-example
 go 1.17
 
 require (
-	github.com/kcp-dev/apimachinery v0.0.0-20220621200107-3d03cbbc3770
+	github.com/kcp-dev/apimachinery v0.0.0-20220627134323-8c44889e6e09
 	github.com/kcp-dev/kcp/pkg/apis v0.5.0-alpha.1
 	github.com/kcp-dev/logicalcluster v1.0.0
 	github.com/onsi/ginkgo v1.16.5

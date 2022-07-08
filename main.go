@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/client-go/discovery"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -65,6 +66,8 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var apiExportName string
+	flag.StringVar(&apiExportName, "api-export-name", "", "The name of the APIExport.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -86,28 +89,41 @@ func main() {
 
 	restConfig := ctrl.GetConfigOrDie()
 
-	apiExportName := os.Args[1]
-	setupLog = setupLog.WithValues("api-export", apiExportName)
+	setupLog = setupLog.WithValues("api-export-name", apiExportName)
 
-	setupLog.Info("Looking up virtual workspace URL")
-	cfg, err := restConfigForAPIExport(ctx, restConfig, os.Args[1])
-	if err != nil {
-		setupLog.Error(err, "error looking up virtual workspace URL")
-	}
-
-	setupLog.Info("Using virtual workspace URL", "url", cfg.Host)
-
-	mgr, err := kcp.NewClusterAwareManager(cfg, ctrl.Options{
+	var mgr ctrl.Manager
+	var err error
+	options := ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "68a0532d.my.domain",
-	})
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
+		LeaderElectionConfig:   restConfig,
+	}
+	if kcpAPIsGroupPresent(restConfig) {
+		setupLog.Info("Looking up virtual workspace URL")
+		cfg, err := restConfigForAPIExport(ctx, restConfig, apiExportName)
+		if err != nil {
+			setupLog.Error(err, "error looking up virtual workspace URL")
+		}
+
+		setupLog.Info("Using virtual workspace URL", "url", cfg.Host)
+
+		options.LeaderElectionConfig = restConfig
+		mgr, err = kcp.NewClusterAwareManager(cfg, options)
+		if err != nil {
+			setupLog.Error(err, "unable to start cluster aware manager")
+			os.Exit(1)
+		}
+	} else {
+		setupLog.Info("The apis.kcp.dev group is not present - creating standard manager")
+		mgr, err = ctrl.NewManager(restConfig, options)
+		if err != nil {
+			setupLog.Error(err, "unable to start manager")
+			os.Exit(1)
+		}
 	}
 
 	if err = (&controllers.ConfigMapReconciler{
@@ -157,8 +173,23 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 
 	var apiExport apisv1alpha1.APIExport
 
-	if err := apiExportClient.Get(ctx, types.NamespacedName{Name: apiExportName}, &apiExport); err != nil {
-		return nil, fmt.Errorf("error getting APIExport %q: %w", apiExportName, err)
+	if apiExportName != "" {
+		if err := apiExportClient.Get(ctx, types.NamespacedName{Name: apiExportName}, &apiExport); err != nil {
+			return nil, fmt.Errorf("error getting APIExport %q: %w", apiExportName, err)
+		}
+	} else {
+		setupLog.Info("api-export-name is empty - listing")
+		exports := &apisv1alpha1.APIExportList{}
+		if err := apiExportClient.List(context.TODO(), exports); err != nil {
+			return nil, fmt.Errorf("error listing APIExports: %w", err)
+		}
+		if len(exports.Items) == 0 {
+			return nil, fmt.Errorf("no APIExport found")
+		}
+		if len(exports.Items) > 1 {
+			return nil, fmt.Errorf("more than one APIExport found")
+		}
+		apiExport = exports.Items[0]
 	}
 
 	if len(apiExport.Status.VirtualWorkspaces) < 1 {
@@ -170,4 +201,28 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 	cfg.Host = apiExport.Status.VirtualWorkspaces[0].URL
 
 	return cfg, nil
+}
+
+func kcpAPIsGroupPresent(restConfig *rest.Config) bool {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(restConfig)
+	if err != nil {
+		setupLog.Error(err, "failed to create discovery client")
+		os.Exit(1)
+	}
+	apiGroupList, err := discoveryClient.ServerGroups()
+	if err != nil {
+		setupLog.Error(err, "failed to get server groups")
+		os.Exit(1)
+	}
+
+	for _, group := range apiGroupList.Groups {
+		if group.Name == apisv1alpha1.SchemeGroupVersion.Group {
+			for _, version := range group.Versions {
+				if version.Version == apisv1alpha1.SchemeGroupVersion.Version {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

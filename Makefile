@@ -80,7 +80,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go $(NAME_PREFIX)$(APIEXPORT_NAME)
 
 .PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
+docker-build: build ## Build docker image with the manager.
 	docker build -t ${IMG} .
 
 .PHONY: docker-push
@@ -100,6 +100,11 @@ install: manifests kustomize ## Install APIResourceSchemas and APIExport into kc
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall APIResourceSchemas and APIExport from kcp (using $KUBECONFIG or ~/.kube/config). Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	kustomize build config/kcp | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+
+.PHONY: deploy-crd
+deploy-crd: manifests kustomize ## Deploy controller
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default-crd | kubectl apply -f - || true
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller

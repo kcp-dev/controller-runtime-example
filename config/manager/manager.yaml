@@ -30,7 +30,7 @@ spec:
       - command:
         - /manager
         args:
-        - data.my.domain
+        - --api-export-name data.my.domain
         - --leader-elect
         image: controller:latest
         name: manager
