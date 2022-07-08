@@ -180,7 +180,7 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 	} else {
 		setupLog.Info("api-export-name is empty - listing")
 		exports := &apisv1alpha1.APIExportList{}
-		if err := apiExportClient.List(context.TODO(), exports); err != nil {
+		if err := apiExportClient.List(ctx, exports); err != nil {
 			return nil, fmt.Errorf("error listing APIExports: %w", err)
 		}
 		if len(exports.Items) == 0 {
