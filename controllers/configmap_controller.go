@@ -40,6 +40,18 @@ type ConfigMapReconciler struct {
 	client.Client
 }
 
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=secrets/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=secrets/finalizers,verbs=update
+
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=configmaps/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=configmaps/finalizers,verbs=update
+
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=namespaces/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=namespaces/finalizers,verbs=update
+
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 
@@ -77,8 +89,20 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		log.Error(err, "unable to list configmaps")
 		return ctrl.Result{}, nil
 	}
+	log.Info("List: got", "itemCount", len(configMapList.Items))
+	found := false
 	for _, cm := range configMapList.Items {
-		log.Info("List: got", "clusterName", logicalcluster.From(&cm).String(), "namespace", cm.Namespace, "name", cm.Name)
+		if !logicalcluster.From(&cm).Empty() {
+			log.Info("List: got", "clusterName", logicalcluster.From(&cm).String(), "namespace", cm.Namespace, "name", cm.Name)
+		} else {
+			if cm.Name == configMap.Name && cm.Namespace == configMap.Namespace {
+				if found {
+					return ctrl.Result{}, fmt.Errorf("there should be listed only one configmap with the given name '%s' for the given namespace '%s' when the clusterName is not available", cm.Name, cm.Namespace)
+				}
+				found = true
+				log.Info("Found in listed configmaps", "namespace", cm.Namespace, "name", cm.Name)
+			}
+		}
 	}
 
 	// If the configmap has a namespace field, create the corresponding namespace
