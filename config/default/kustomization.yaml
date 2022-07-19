@@ -72,6 +72,10 @@ vars:
 #    kind: Service
 #    version: v1
 #    name: webhook-service
-
-configurations:
-  - kustomizeconfig.yaml
+- name: API_EXPORT_NAME
+  objref:
+    apiVersion: apis.kcp.dev/v1alpha1
+    kind: APIExport
+    name: data.my.domain
+  fieldref:
+    fieldPath: metadata.name

@@ -1,5 +1,0 @@
-nameReference:
-- kind: APIExport
-  fieldSpecs:
-    - kind: Deployment
-      path: spec/template/spec/containers/args
