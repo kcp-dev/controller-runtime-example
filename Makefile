@@ -95,11 +95,11 @@ endif
 
 .PHONY: install
 install: manifests kustomize ## Install APIResourceSchemas and APIExport into kcp (using $KUBECONFIG or ~/.kube/config).
-	kustomize build config/kcp | kubectl apply -f -
+	$(KUSTOMIZE) build config/kcp | kubectl apply -f -
 
 .PHONY: uninstall
 uninstall: manifests kustomize ## Uninstall APIResourceSchemas and APIExport from kcp (using $KUBECONFIG or ~/.kube/config). Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	kustomize build config/kcp | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+	$(KUSTOMIZE) build config/kcp | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy-crd
 deploy-crd: manifests kustomize ## Deploy controller
