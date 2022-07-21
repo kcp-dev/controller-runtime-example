@@ -26,8 +26,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	kcpclient "github.com/kcp-dev/apimachinery/pkg/client"
-
 	"github.com/kcp-dev/logicalcluster"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -55,7 +53,7 @@ type ConfigMapReconciler struct {
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 
-	ctx = kcpclient.WithCluster(ctx, logicalcluster.New(req.ClusterName))
+	ctx = logicalcluster.WithCluster(ctx, logicalcluster.New(req.ClusterName))
 
 	// Test get
 	var configMap corev1.ConfigMap
