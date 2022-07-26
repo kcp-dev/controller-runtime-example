@@ -309,8 +309,9 @@ github.com/kcp-dev/controller-runtime v0.11.3-0.20220624161137-f6e5a2f56683 h1:e
 github.com/kcp-dev/controller-runtime v0.11.3-0.20220624161137-f6e5a2f56683/go.mod h1:XP0cED2MCy2/reuXqTwLEENUkZlu6GE1UbQx55IUyA4=
 github.com/kcp-dev/kcp/pkg/apis v0.5.0-alpha.1 h1:Z8L4TOam02khARPvS0d3kdyFB1yfwYTCx9x+i09KRzY=
 github.com/kcp-dev/kcp/pkg/apis v0.5.0-alpha.1/go.mod h1:7MSnXcgGi9YpzeA0/ebqTkQka3KyfgYKfxD+e9z9GP4=
-github.com/kcp-dev/logicalcluster v1.0.0 h1:qCnoUNaqJ0Tgefkj3vXn17EC76AP44WZwnIuHLw6yGQ=
 github.com/kcp-dev/logicalcluster v1.0.0/go.mod h1:M0CBFkJTW29XtIP5XIkDfhYQ8LU6HrnseRb4zmgBltE=
+github.com/kcp-dev/logicalcluster v1.1.1 h1:6jv54KRHDVvsJjuaV6dWNHVivYCSxDjGjfN+m1pVu3k=
+github.com/kcp-dev/logicalcluster v1.1.1/go.mod h1:3IvnQ1TDaTuyhgRqagtKWd1XKz3kBeP8ByLvyNiWywg=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=

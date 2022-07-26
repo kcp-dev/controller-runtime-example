@@ -3,9 +3,8 @@ module github.com/kcp-dev/controller-runtime-example
 go 1.17
 
 require (
-	github.com/kcp-dev/apimachinery v0.0.0-20220627134323-8c44889e6e09
 	github.com/kcp-dev/kcp/pkg/apis v0.5.0-alpha.1
-	github.com/kcp-dev/logicalcluster v1.0.0
+	github.com/kcp-dev/logicalcluster v1.1.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.17.0
 	k8s.io/api v0.23.5
@@ -40,6 +39,7 @@ require (
 	github.com/googleapis/gnostic v0.5.5 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
+	github.com/kcp-dev/apimachinery v0.0.0-20220627134323-8c44889e6e09 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
