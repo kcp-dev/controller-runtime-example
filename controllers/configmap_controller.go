@@ -26,7 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kcp-dev/logicalcluster"
+	"github.com/kcp-dev/logicalcluster/v2"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -135,7 +135,6 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		secret.SetName(configMap.GetName())
 		secret.SetNamespace(configMap.GetNamespace())
-		secret.SetClusterName(logicalcluster.From(&configMap).String())
 		secret.SetOwnerReferences([]metav1.OwnerReference{metav1.OwnerReference{
 			Name:       configMap.GetName(),
 			UID:        configMap.GetUID(),
