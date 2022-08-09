@@ -92,12 +92,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  - apis.kcp.dev
-  resources:
-  - apiexports/status
-  verbs:
-  - get
-- apiGroups:
   - data.my.domain
   resources:
   - widgets
