@@ -77,7 +77,7 @@ APIEXPORT_NAME ?= data.my.domain
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go $(NAME_PREFIX)$(APIEXPORT_NAME)
+	go run ./main.go --api-export-name $(NAME_PREFIX)$(APIEXPORT_NAME)
 
 .PHONY: docker-build
 docker-build: build ## Build docker image with the manager.

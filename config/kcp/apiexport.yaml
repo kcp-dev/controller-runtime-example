@@ -5,3 +5,8 @@ metadata:
 spec:
   latestResourceSchemas:
     - today.widgets.data.my.domain
+  permissionClaims:
+    - group: ""
+      resource: "secrets"
+    - group: ""
+      resource: "configmaps"
