@@ -10,3 +10,5 @@ spec:
       resource: "secrets"
     - group: ""
       resource: "configmaps"
+    - group: ""
+      resource: "namespaces"
