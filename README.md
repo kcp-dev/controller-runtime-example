@@ -71,6 +71,7 @@ make install
 ```sh
 make run
 ```
+3. Create an APIBinding to the APIExport, which was created during step 1. An example is available at [./config/kcp/apibinding.yaml](./config/kcp/apibinding.yaml)
 
 **NOTE:** You can also run this in one step by running: `make install run`
 
