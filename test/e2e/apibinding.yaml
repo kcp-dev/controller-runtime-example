@@ -1,0 +1,13 @@
+apiVersion: apis.kcp.dev/v1alpha1
+kind: APIBinding
+metadata:
+  name: data.my.domain
+spec:
+  reference:
+    workspace:
+      path: WORKSPACE
+      exportName: data.my.domain
+  acceptedPermissionClaims:
+  - resource: "secrets"
+  - resource: "configmaps"
+  - resource: "namespaces"
