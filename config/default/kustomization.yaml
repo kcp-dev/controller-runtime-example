@@ -13,6 +13,7 @@ namePrefix: controller-runtime-example-
 #  someName: someValue
 
 bases:
+- ../crd
 - ../kcp
 - ../rbac
 - ../manager
