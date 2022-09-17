@@ -127,15 +127,9 @@ run-test-e2e: ## Run end-to-end tests on a cluster.
 
 .PHONY: ready-deployment
 ready-deployment: KUBECONFIG = $(ARTIFACT_DIR)/kcp.kubeconfig
-ready-deployment: kind-image install deploy apibinding ## Deploy the controller-manager and wait for it to be ready.
+ready-deployment: kind-image install deploy ## Deploy the controller-manager and wait for it to be ready.
 	$(KCP_KUBECTL) --namespace "controller-runtime-example-system" rollout status deployment/controller-runtime-example-controller-manager
 
-# TODO(skuznets|ncdc): this APIBinding is not needed, but here only to work around https://github.com/kcp-dev/kcp/issues/1183 - remove it once that is fixed
-.PHONY: apibinding
-apibinding:
-	$( eval WORKSPACE = $(shell $(KCP_KUBECTL) kcp workspace . --short))
-	sed 's/WORKSPACE/$(WORKSPACE)/' ./test/e2e/apibinding.yaml | $(KCP_KUBECTL) apply -f -
-	$(KCP_KUBECTL) wait --for=condition=Ready apibinding/data.my.domain
 
 .PHONY: kind-image
 kind-image: docker-build ## Load the controller-manager image into the kind cluster.

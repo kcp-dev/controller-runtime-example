@@ -3,3 +3,8 @@ nameReference:
   fieldSpecs:
   - kind: APIExport
     path: spec/latestResourceSchemas
+- kind: APIExport
+  fieldSpecs:
+  - kind: APIBinding
+    path: spec/reference/workspace/exportName
+
