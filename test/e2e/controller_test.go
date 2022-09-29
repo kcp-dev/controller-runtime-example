@@ -65,7 +65,7 @@ func loadClusterConfig(t *testing.T, clusterName logicalcluster.Name) *rest.Conf
 	if err != nil {
 		t.Fatalf("failed to load *rest.Config: %v", err)
 	}
-	return rest.AddUserAgent(kcpclienthelper.ConfigWithCluster(restConfig, clusterName), t.Name())
+	return rest.AddUserAgent(kcpclienthelper.SetCluster(rest.CopyConfig(restConfig), clusterName), t.Name())
 }
 
 func loadClient(t *testing.T, clusterName logicalcluster.Name) client.Client {
@@ -148,10 +148,25 @@ func createAPIBinding(t *testing.T, workspaceCluster logicalcluster.Name) client
 					ExportName: apiName,
 				},
 			},
-			AcceptedPermissionClaims: []apisv1alpha1.PermissionClaim{
-				{GroupResource: apisv1alpha1.GroupResource{Resource: "configmaps"}},
-				{GroupResource: apisv1alpha1.GroupResource{Resource: "secrets"}},
-				{GroupResource: apisv1alpha1.GroupResource{Resource: "namespaces"}},
+			PermissionClaims: []apisv1alpha1.AcceptablePermissionClaim{
+				{
+					PermissionClaim: apisv1alpha1.PermissionClaim{
+						GroupResource: apisv1alpha1.GroupResource{Resource: "configmaps"},
+					},
+					State: apisv1alpha1.ClaimAccepted,
+				},
+				{
+					PermissionClaim: apisv1alpha1.PermissionClaim{
+						GroupResource: apisv1alpha1.GroupResource{Resource: "secrets"},
+					},
+					State: apisv1alpha1.ClaimAccepted,
+				},
+				{
+					PermissionClaim: apisv1alpha1.PermissionClaim{
+						GroupResource: apisv1alpha1.GroupResource{Resource: "namespaces"},
+					},
+					State: apisv1alpha1.ClaimAccepted,
+				},
 			},
 		},
 	}); err != nil {

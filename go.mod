@@ -1,17 +1,19 @@
 module github.com/kcp-dev/controller-runtime-example
 
-go 1.18
+go 1.17
 
 require (
-	github.com/kcp-dev/kcp/pkg/apis v0.7.0
-	github.com/kcp-dev/logicalcluster/v2 v2.0.0-alpha.1
+	github.com/google/go-cmp v0.5.6
+	github.com/kcp-dev/apimachinery v0.0.0-20220922165458-607ac5e87531
+	github.com/kcp-dev/kcp/pkg/apis v0.9.1
+	github.com/kcp-dev/logicalcluster/v2 v2.0.0-alpha.3
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
 	k8s.io/api v0.24.3
 	k8s.io/apimachinery v0.24.3
 	k8s.io/client-go v0.24.3
 	k8s.io/klog/v2 v2.60.1
-	sigs.k8s.io/controller-runtime v0.11.2
+	sigs.k8s.io/controller-runtime v0.12.3
 )
 
 require (
@@ -40,13 +42,11 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
-	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kcp-dev/apimachinery v0.0.0-20220805180221-5b13097793e1 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -85,4 +85,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace sigs.k8s.io/controller-runtime => github.com/kcp-dev/controller-runtime v0.12.2-0.20220808200255-4b60fd66e5de
+replace sigs.k8s.io/controller-runtime v0.12.3 => github.com/kcp-dev/controller-runtime v0.12.2-0.20221006162808-d4b60cec23b4
