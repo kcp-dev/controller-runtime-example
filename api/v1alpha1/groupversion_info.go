@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the data v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=data.my.domain
+// +kubebuilder:object:generate=true
+// +groupName=data.my.domain
 package v1alpha1
 
 import (
