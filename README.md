@@ -27,13 +27,13 @@ two reconcilers:
 1. Build and push your image to the location specified by `IMG`:
 	
 ```sh
-make docker-build docker-push IMG=<some-registry>/controller-runtime-example:tag
+make docker-build docker-push REGISTRY=<some-registry> IMG=controller-runtime-example:tag
 ```
 	
 1. Deploy the controller to kcp with the image specified by `IMG`:
 
 ```sh
-make deploy IMG=<some-registry>/controller-runtime-example:tag
+make deploy REGISTRY=<some-registry> IMG=controller-runtime-example:tag
 ```
 
 ### Uninstall resources
