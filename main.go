@@ -22,30 +22,31 @@ import (
 	"fmt"
 	"os"
 
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/discovery"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"k8s.io/utils/strings/slices"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/kcp"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	datav1alpha1 "github.com/kcp-dev/controller-runtime-example/api/v1alpha1"
+	apisv1alpha1 "github.com/kcp-dev/kcp/pkg/apis/apis/v1alpha1"
+	"github.com/kcp-dev/kcp/pkg/apis/third_party/conditions/util/conditions"
 
 	// +kubebuilder:scaffold:imports
 
+	datav1alpha1 "github.com/kcp-dev/controller-runtime-example/api/v1alpha1"
 	"github.com/kcp-dev/controller-runtime-example/controllers"
-
-	apisv1alpha1 "github.com/kcp-dev/kcp/pkg/apis/apis/v1alpha1"
 )
 
 var (
@@ -168,41 +169,57 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 		return nil, fmt.Errorf("error adding apis.kcp.dev/v1alpha1 to scheme: %w", err)
 	}
 
-	apiExportClient, err := client.New(cfg, client.Options{Scheme: scheme})
+	apiExportClient, err := client.NewWithWatch(cfg, client.Options{Scheme: scheme})
 	if err != nil {
 		return nil, fmt.Errorf("error creating APIExport client: %w", err)
 	}
 
-	var apiExport apisv1alpha1.APIExport
-
+	var opts []client.ListOption
 	if apiExportName != "" {
-		if err := apiExportClient.Get(ctx, types.NamespacedName{Name: apiExportName}, &apiExport); err != nil {
-			return nil, fmt.Errorf("error getting APIExport %q: %w", apiExportName, err)
-		}
-	} else {
-		setupLog.Info("api-export-name is empty - listing")
-		exports := &apisv1alpha1.APIExportList{}
-		if err := apiExportClient.List(ctx, exports); err != nil {
-			return nil, fmt.Errorf("error listing APIExports: %w", err)
-		}
-		if len(exports.Items) == 0 {
-			return nil, fmt.Errorf("no APIExport found")
-		}
-		if len(exports.Items) > 1 {
-			return nil, fmt.Errorf("more than one APIExport found")
-		}
-		apiExport = exports.Items[0]
+		opts = append(opts, client.MatchingFieldsSelector{
+			Selector: fields.OneTermEqualSelector("metadata.name", apiExportName),
+		})
 	}
 
-	if len(apiExport.Status.VirtualWorkspaces) < 1 {
-		return nil, fmt.Errorf("APIExport %q status.virtualWorkspaces is empty", apiExportName)
+	watch, err := apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("error watching for APIExport: %w", err)
 	}
 
-	cfg = rest.CopyConfig(cfg)
-	// TODO(ncdc): sharding support
-	cfg.Host = apiExport.Status.VirtualWorkspaces[0].URL
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case e := <-watch.ResultChan():
+			apiExport, ok := e.Object.(*apisv1alpha1.APIExport)
+			if !ok {
+				continue
+			}
 
-	return cfg, nil
+			if !slices.Contains(apiExport.Spec.LatestResourceSchemas, "today.widgets.data.my.domain") {
+				// This is not this controller APIExport
+				continue
+			}
+
+			setupLog.Info("APIExport event received", "name", apiExport.Name, "event", e.Type)
+
+			if !conditions.IsTrue(apiExport, apisv1alpha1.APIExportVirtualWorkspaceURLsReady) {
+				setupLog.Info("APIExport virtual workspace URLs are not ready", "APIExport", apiExport.Name)
+				continue
+			}
+
+			if len(apiExport.Status.VirtualWorkspaces) == 0 {
+				setupLog.Info("APIExport does not have any virtual workspace URLs", "APIExport", apiExport.Name)
+				continue
+			}
+
+			setupLog.Info("Using APIExport to configure client", "APIExport", apiExport.Name)
+			cfg = rest.CopyConfig(cfg)
+			// TODO(ncdc): sharding support
+			cfg.Host = apiExport.Status.VirtualWorkspaces[0].URL
+			return cfg, nil
+		}
+	}
 }
 
 func kcpAPIsGroupPresent(restConfig *rest.Config) bool {
