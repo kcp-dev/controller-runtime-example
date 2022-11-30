@@ -191,7 +191,16 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
-		case e := <-watch.ResultChan():
+		case e, ok := <-watch.ResultChan():
+			if !ok {
+				// The channel has been closed. Let's retry watching in case it timed out on idle,
+				// or fail in case connection to the server cannot be re-established.
+				watch, err = apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, opts...)
+				if err != nil {
+					return nil, fmt.Errorf("error watching for APIExport: %w", err)
+				}
+			}
+
 			apiExport, ok := e.Object.(*apisv1alpha1.APIExport)
 			if !ok {
 				continue
