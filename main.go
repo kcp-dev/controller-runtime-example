@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,12 +30,12 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/strings/slices"
 
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	ctrl "sigs.k8s.io/controller-runtime"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/kcp"
@@ -196,12 +197,13 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 				continue
 			}
 
-			if !slices.Contains(apiExport.Spec.LatestResourceSchemas, "today.widgets.data.my.domain") {
+			setupLog.Info("APIExport event received", "name", apiExport.Name, "event", e.Type)
+
+			if resources := apiExport.Spec.LatestResourceSchemas; apiExportName == "" &&
+				(len(resources) == 0 || !strings.HasSuffix(resources[0], datav1alpha1.GroupVersion.Group)) {
 				// This is not this controller APIExport
 				continue
 			}
-
-			setupLog.Info("APIExport event received", "name", apiExport.Name, "event", e.Type)
 
 			if !conditions.IsTrue(apiExport, apisv1alpha1.APIExportVirtualWorkspaceURLsReady) {
 				setupLog.Info("APIExport virtual workspace URLs are not ready", "APIExport", apiExport.Name)
