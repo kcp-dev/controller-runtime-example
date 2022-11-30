@@ -163,7 +163,8 @@ func main() {
 // +kubebuilder:rbac:groups="apis.kcp.dev",resources=apiexports,verbs=get;list;watch
 
 // restConfigForAPIExport returns a *rest.Config properly configured to communicate with the endpoint for the
-// APIExport's virtual workspace.
+// APIExport's virtual workspace. It blocks until the controller APIExport VirtualWorkspaceURLsReady condition
+// becomes truthy, which happens when the APIExport is bound for the first time.
 func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName string) (*rest.Config, error) {
 	scheme := runtime.NewScheme()
 	if err := apisv1alpha1.AddToScheme(scheme); err != nil {
