@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -69,7 +68,7 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var apiExportName string
-	flag.StringVar(&apiExportName, "api-export-name", "", "The name of the APIExport.")
+	flag.StringVar(&apiExportName, "api-export-name", "data.my.domain", "The name of the APIExport.")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -176,14 +175,10 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 		return nil, fmt.Errorf("error creating APIExport client: %w", err)
 	}
 
-	var opts []client.ListOption
-	if apiExportName != "" {
-		opts = append(opts, client.MatchingFieldsSelector{
-			Selector: fields.OneTermEqualSelector("metadata.name", apiExportName),
-		})
+	selector := client.MatchingFieldsSelector{
+		Selector: fields.OneTermEqualSelector("metadata.name", apiExportName),
 	}
-
-	watch, err := apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, opts...)
+	watch, err := apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, selector)
 	if err != nil {
 		return nil, fmt.Errorf("error watching for APIExport: %w", err)
 	}
@@ -197,7 +192,7 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 			if !ok {
 				// The channel has been closed. Let's retry watching in case it timed out on idle,
 				// or fail in case connection to the server cannot be re-established.
-				watch, err = apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, opts...)
+				watch, err = apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, selector)
 				if err != nil {
 					return nil, fmt.Errorf("error watching for APIExport: %w", err)
 				}
@@ -209,12 +204,6 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 			}
 
 			setupLog.Info("APIExport event received", "name", apiExport.Name, "event", e.Type)
-
-			if resources := apiExport.Spec.LatestResourceSchemas; apiExportName == "" &&
-				(len(resources) == 0 || !strings.HasSuffix(resources[0], datav1alpha1.GroupVersion.Group)) {
-				// This is not this controller APIExport
-				continue
-			}
 
 			if !conditions.IsTrue(apiExport, apisv1alpha1.APIExportVirtualWorkspaceURLsReady) {
 				setupLog.Info("APIExport virtual workspace URLs are not ready", "APIExport", apiExport.Name)
