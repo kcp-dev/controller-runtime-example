@@ -165,11 +165,6 @@ func main() {
 // APIExport's virtual workspace. It blocks until the controller APIExport VirtualWorkspaceURLsReady condition
 // becomes truthy, which happens when the APIExport is bound for the first time.
 func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName string) (*rest.Config, error) {
-	scheme := runtime.NewScheme()
-	if err := apisv1alpha1.AddToScheme(scheme); err != nil {
-		return nil, fmt.Errorf("error adding apis.kcp.dev/v1alpha1 to scheme: %w", err)
-	}
-
 	apiExportClient, err := client.NewWithWatch(cfg, client.Options{Scheme: scheme})
 	if err != nil {
 		return nil, fmt.Errorf("error creating APIExport client: %w", err)
