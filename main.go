@@ -22,12 +22,16 @@ import (
 	"fmt"
 	"os"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	retrywatch "k8s.io/client-go/tools/watch"
 	"k8s.io/klog/v2"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -170,51 +174,49 @@ func restConfigForAPIExport(ctx context.Context, cfg *rest.Config, apiExportName
 		return nil, fmt.Errorf("error creating APIExport client: %w", err)
 	}
 
-	selector := client.MatchingFieldsSelector{
-		Selector: fields.OneTermEqualSelector("metadata.name", apiExportName),
-	}
-	watch, err := apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, selector)
+	list := &apisv1alpha1.APIExportList{}
+	selector := fields.OneTermEqualSelector("metadata.name", apiExportName)
+	err = apiExportClient.List(ctx, list, client.MatchingFieldsSelector{Selector: selector})
 	if err != nil {
 		return nil, fmt.Errorf("error watching for APIExport: %w", err)
 	}
+	if len(list.Items) > 0 && isAPIExportReady(&list.Items[0]) {
+		cfg = rest.CopyConfig(cfg)
+		// TODO: sharding support
+		cfg.Host = list.Items[0].Status.VirtualWorkspaces[0].URL
+		return cfg, nil
+	}
+
+	setupLog.Info("Watching for APIExport to become ready", "name", apiExportName)
+
+	rw, err := retrywatch.NewRetryWatcher(list.ResourceVersion, watcher(apiExportClient.Watch).FilteredBy(selector))
+	if err != nil {
+		return nil, fmt.Errorf("error creating retry watcher for APIExport: %w", err)
+	}
+	defer rw.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			watch.Stop()
 			return nil, ctx.Err()
-		case e, ok := <-watch.ResultChan():
-			if !ok {
-				// The channel has been closed. Let's retry watching in case it timed out on idle,
-				// or fail in case connection to the server cannot be re-established.
-				watch, err = apiExportClient.Watch(ctx, &apisv1alpha1.APIExportList{}, selector)
-				if err != nil {
-					return nil, fmt.Errorf("error watching for APIExport: %w", err)
+		case e := <-rw.ResultChan():
+			switch e.Type {
+			case watch.Error:
+				return nil, fmt.Errorf("error watching for APIExport: %w", apierrors.FromObject(e.Object))
+
+			case watch.Added, watch.Modified:
+				apiExport, ok := e.Object.(*apisv1alpha1.APIExport)
+				if !ok {
+					return nil, fmt.Errorf("unexpected event object: %v", e.Object)
 				}
+				if !isAPIExportReady(apiExport) {
+					continue
+				}
+				cfg = rest.CopyConfig(cfg)
+				// TODO: sharding support
+				cfg.Host = apiExport.Status.VirtualWorkspaces[0].URL
+				return cfg, nil
 			}
-
-			apiExport, ok := e.Object.(*apisv1alpha1.APIExport)
-			if !ok {
-				continue
-			}
-
-			setupLog.Info("APIExport event received", "name", apiExport.Name, "event", e.Type)
-
-			if !conditions.IsTrue(apiExport, apisv1alpha1.APIExportVirtualWorkspaceURLsReady) {
-				setupLog.Info("APIExport virtual workspace URLs are not ready", "APIExport", apiExport.Name)
-				continue
-			}
-
-			if len(apiExport.Status.VirtualWorkspaces) == 0 {
-				setupLog.Info("APIExport does not have any virtual workspace URLs", "APIExport", apiExport.Name)
-				continue
-			}
-
-			setupLog.Info("Using APIExport to configure client", "APIExport", apiExport.Name)
-			cfg = rest.CopyConfig(cfg)
-			// TODO(ncdc): sharding support
-			cfg.Host = apiExport.Status.VirtualWorkspaces[0].URL
-			return cfg, nil
 		}
 	}
 }
@@ -241,4 +243,30 @@ func kcpAPIsGroupPresent(restConfig *rest.Config) bool {
 		}
 	}
 	return false
+}
+
+func isAPIExportReady(apiExport *apisv1alpha1.APIExport) bool {
+	if !conditions.IsTrue(apiExport, apisv1alpha1.APIExportVirtualWorkspaceURLsReady) {
+		setupLog.Info("APIExport virtual workspace URLs are not ready", "APIExport", apiExport.Name)
+		return false
+	}
+
+	if len(apiExport.Status.VirtualWorkspaces) == 0 {
+		setupLog.Info("APIExport does not have any virtual workspace URLs", "APIExport", apiExport.Name)
+		return false
+	}
+
+	return true
+}
+
+type watcher func(ctx context.Context, obj client.ObjectList, opts ...client.ListOption) (watch.Interface, error)
+
+func (w watcher) Watch(options metav1.ListOptions) (watch.Interface, error) {
+	return w(context.TODO(), &apisv1alpha1.APIExportList{}, &client.ListOptions{Raw: &options})
+}
+
+func (w watcher) FilteredBy(selector fields.Selector) watcher {
+	return func(ctx context.Context, obj client.ObjectList, opts ...client.ListOption) (watch.Interface, error) {
+		return w(ctx, obj, append(opts, client.MatchingFieldsSelector{Selector: selector})...)
+	}
 }
