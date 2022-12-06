@@ -142,7 +142,7 @@ kind-image: docker-build ## Load the controller-manager image into the kind clus
 	kind load docker-image $(REGISTRY)/$(IMG) --name controller-runtime-example
 
 $(ARTIFACT_DIR)/kind.kubeconfig: $(ARTIFACT_DIR) ## Run a kind cluster and generate a $KUBECONFIG for it.
-	@if ! kind get clusters --quiet | grep --quiet controller-runtime-example; then kind create cluster --name controller-runtime-example; fi
+	@if ! kind get clusters --quiet | grep --quiet controller-runtime-example; then kind create cluster --name controller-runtime-example --image kindest/node:v1.24.2; fi
 	kind get kubeconfig --name controller-runtime-example > $(ARTIFACT_DIR)/kind.kubeconfig
 
 $(ARTIFACT_DIR): ## Create a directory for test artifacts.
@@ -211,7 +211,7 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
-KUBECONFIG ?= $(abspath ~/.kube/config )
+KUBECONFIG ?= $(abspath ${HOME}/.kube/config )
 
 .PHONY: install
 install: manifests $(KUSTOMIZE) ## Install APIResourceSchemas and APIExport into kcp (using $KUBECONFIG or ~/.kube/config).
