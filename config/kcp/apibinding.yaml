@@ -5,9 +5,11 @@ metadata:
 spec:
   reference:
     workspace:
-      path: WORKSPACE
       exportName: data.my.domain
-  acceptedPermissionClaims:
+  permissionClaims:
   - resource: "secrets"
+    state: "Accepted"
   - resource: "configmaps"
+    state: "Accepted"
   - resource: "namespaces"
+    state: "Accepted"
