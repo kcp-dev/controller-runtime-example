@@ -124,7 +124,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		setupLog.Info("The apis.kcp.dev group is not present - creating standard manager")
+		setupLog.Info("The KCP API group is not present - creating standard manager", "group", apisv1alpha1.SchemeGroupVersion.Group)
 		mgr, err = ctrl.NewManager(restConfig, options)
 		if err != nil {
 			setupLog.Error(err, "unable to start manager")
@@ -164,7 +164,7 @@ func main() {
 	}
 }
 
-// +kubebuilder:rbac:groups="apis.kcp.dev",resources=apiexports,verbs=get;list;watch
+// +kubebuilder:rbac:groups="apis.kcp.io",resources=apiexports,verbs=get;list;watch
 
 // restConfigForAPIExport returns a *rest.Config properly configured to communicate with the endpoint for the
 // APIExport's virtual workspace. It blocks until the controller APIExport VirtualWorkspaceURLsReady condition

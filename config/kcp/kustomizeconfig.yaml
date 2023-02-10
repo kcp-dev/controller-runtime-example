@@ -1,5 +1,9 @@
 nameReference:
-- kind: APIResourceSchema
-  fieldSpecs:
+  - kind: APIResourceSchema
+    fieldSpecs:
+      - kind: APIExport
+        path: spec/latestResourceSchemas
   - kind: APIExport
-    path: spec/latestResourceSchemas
+    fieldSpecs:
+      - kind: ClusterRole
+        path: rules/resourceNames

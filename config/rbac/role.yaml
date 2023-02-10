@@ -84,7 +84,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - apis.kcp.dev
+  - apis.kcp.io
   resources:
   - apiexports
   verbs:

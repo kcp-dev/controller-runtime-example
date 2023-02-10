@@ -19,11 +19,12 @@ package controllers
 import (
 	"context"
 
-	"github.com/kcp-dev/logicalcluster/v2"
+	"github.com/kcp-dev/logicalcluster/v3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/kontext"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	datav1alpha1 "github.com/kcp-dev/controller-runtime-example/api/v1alpha1"
@@ -56,7 +57,7 @@ func (r *WidgetReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	logger.Info("Listed all widgets across all workspaces", "count", len(allWidgets.Items))
 
 	// Add the logical cluster to the context
-	ctx = logicalcluster.WithCluster(ctx, logicalcluster.New(req.ClusterName))
+	ctx = kontext.WithCluster(ctx, logicalcluster.Name(req.ClusterName))
 
 	logger.Info("Getting widget")
 	var w datav1alpha1.Widget

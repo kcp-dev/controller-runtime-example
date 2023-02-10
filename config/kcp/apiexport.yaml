@@ -1,4 +1,4 @@
-apiVersion: apis.kcp.dev/v1alpha1
+apiVersion: apis.kcp.io/v1alpha1
 kind: APIExport
 metadata:
   name: data.my.domain
@@ -8,7 +8,10 @@ spec:
   permissionClaims:
     - group: ""
       resource: "secrets"
+      all: true
     - group: ""
       resource: "configmaps"
+      all: true
     - group: ""
       resource: "namespaces"
+      all: true

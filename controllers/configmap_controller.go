@@ -26,11 +26,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kcp-dev/logicalcluster/v2"
-
+	"github.com/kcp-dev/logicalcluster/v3"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/kontext"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -53,7 +53,7 @@ type ConfigMapReconciler struct {
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx).WithValues("cluster", req.ClusterName)
 
-	ctx = logicalcluster.WithCluster(ctx, logicalcluster.New(req.ClusterName))
+	ctx = kontext.WithCluster(ctx, logicalcluster.Name(req.ClusterName))
 
 	// Test get
 	var configMap corev1.ConfigMap
@@ -135,7 +135,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 		secret.SetName(configMap.GetName())
 		secret.SetNamespace(configMap.GetNamespace())
-		secret.SetOwnerReferences([]metav1.OwnerReference{metav1.OwnerReference{
+		secret.SetOwnerReferences([]metav1.OwnerReference{{
 			Name:       configMap.GetName(),
 			UID:        configMap.GetUID(),
 			APIVersion: "v1",

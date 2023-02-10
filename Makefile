@@ -31,7 +31,7 @@ YQ ?= $(LOCALBIN)/yq
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v3.8.7
 CONTROLLER_TOOLS_VERSION ?= v0.8.0
-KCP_VERSION ?= 0.9.1
+KCP_VERSION ?= 0.11.0-alpha.0
 YQ_VERSION ?= v4.27.2
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
@@ -123,14 +123,18 @@ test-e2e: $(ARTIFACT_DIR)/kind.kubeconfig kcp-synctarget ready-deployment run-te
 
 .PHONY: run-test-e2e
 run-test-e2e: ## Run end-to-end tests on a cluster.
-	go test ./test/e2e/... --kubeconfig $(abspath $(ARTIFACT_DIR)/kcp.kubeconfig) --workspace $(shell $(KCP_KUBECTL) kcp workspace . --short)
+	go test -v ./test/e2e/... --kubeconfig $(abspath $(ARTIFACT_DIR)/kcp.kubeconfig) --workspace $(shell $(KCP_KUBECTL) get logicalcluster cluster -o jsonpath="{.metadata.annotations.kcp\.io/path}")
 
 .PHONY: ready-deployment
 ready-deployment: KUBECONFIG = $(ARTIFACT_DIR)/kcp.kubeconfig
-ready-deployment: kind-image install deploy apibinding ## Deploy the controller-manager and wait for it to be ready.
+ready-deployment: kind-image install bindcompute deploy apibinding  ## Deploy the controller-manager and wait for it to be ready.
 	$(KCP_KUBECTL) --namespace "controller-runtime-example-system" rollout status deployment/controller-runtime-example-controller-manager
 
-# TODO(skuznets|ncdc): this APIBinding is not needed, but here only to work around https://github.com/kcp-dev/kcp/issues/1183 - remove it once that is fixed
+.PHONY: bindcompute
+bindcompute:
+	$(KCP_KUBECTL) kcp bind compute $(shell $(KCP_KUBECTL) get logicalcluster cluster -o jsonpath="{.metadata.annotations.kcp\.io/path}")
+
+# TODO(skuznets|ncdc): this APIBinding is not needed, but here only to work around https://github.com/kcp-dev/kcp/issues/2663 - remove it once that is fixed
 .PHONY: apibinding
 apibinding:
 	$( eval WORKSPACE = $(shell $(KCP_KUBECTL) kcp workspace . --short))
@@ -183,6 +187,10 @@ test-e2e-cleanup: ## Clean up processes and directories from an end-to-end test 
 	rm -rf $(ARTIFACT_DIR) || true
 	pkill -sigterm kcp || true
 	pkill -sigterm kubectl || true
+
+.PHONY: clean-bins
+clean-bins: ## Remove binaries.
+	rm -rf $(ARTIFACT_DIR) || true
 
 ##@ Build
 
