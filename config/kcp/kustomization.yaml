@@ -3,6 +3,7 @@ resources:
   - apiexport.yaml
   - clusterrole.yaml
   - clusterrolebinding.yaml
+  - clusterroles-apiexport-bind.yaml
 
 configurations:
   - kustomizeconfig.yaml

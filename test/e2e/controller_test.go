@@ -11,14 +11,13 @@ import (
 	"github.com/google/go-cmp/cmp"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	kcpclienthelper "github.com/kcp-dev/apimachinery/pkg/client"
-
+	kcpclienthelper "github.com/kcp-dev/apimachinery/v2/pkg/client"
+	datav1alpha1 "github.com/kcp-dev/controller-runtime-example/api/v1alpha1"
 	apisv1alpha1 "github.com/kcp-dev/kcp/pkg/apis/apis/v1alpha1"
+	corev1alpha1 "github.com/kcp-dev/kcp/pkg/apis/core/v1alpha1"
 	tenancyv1alpha1 "github.com/kcp-dev/kcp/pkg/apis/tenancy/v1alpha1"
 	"github.com/kcp-dev/kcp/pkg/apis/third_party/conditions/util/conditions"
-
-	"github.com/kcp-dev/logicalcluster/v2"
-
+	"github.com/kcp-dev/logicalcluster/v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -26,11 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	datav1alpha1 "github.com/kcp-dev/controller-runtime-example/api/v1alpha1"
 )
 
 // The tests in this package expect to be called when:
@@ -50,16 +46,16 @@ func init() {
 	flag.StringVar(&workspaceName, "workspace", "", "Workspace in which to run these tests.")
 }
 
-func parentWorkspace(t *testing.T) logicalcluster.Name {
+func parentWorkspace(t *testing.T) logicalcluster.Path {
 	flag.Parse()
 	if workspaceName == "" {
 		t.Fatal("--workspace cannot be empty")
 	}
 
-	return logicalcluster.New(workspaceName)
+	return logicalcluster.NewPath(workspaceName)
 }
 
-func loadClusterConfig(t *testing.T, clusterName logicalcluster.Name) *rest.Config {
+func loadClusterConfig(t *testing.T, clusterName logicalcluster.Path) *rest.Config {
 	t.Helper()
 	restConfig, err := config.GetConfigWithContext("base")
 	if err != nil {
@@ -68,7 +64,7 @@ func loadClusterConfig(t *testing.T, clusterName logicalcluster.Name) *rest.Conf
 	return rest.AddUserAgent(kcpclienthelper.SetCluster(rest.CopyConfig(restConfig), clusterName), t.Name())
 }
 
-func loadClient(t *testing.T, clusterName logicalcluster.Name) client.Client {
+func loadClient(t *testing.T, clusterName logicalcluster.Path) client.Client {
 	t.Helper()
 	scheme := runtime.NewScheme()
 	if err := clientgoscheme.AddToScheme(scheme); err != nil {
@@ -90,7 +86,7 @@ func loadClient(t *testing.T, clusterName logicalcluster.Name) client.Client {
 	return tenancyClient
 }
 
-func createWorkspace(t *testing.T, clusterName logicalcluster.Name) client.Client {
+func createWorkspace(t *testing.T, clusterName logicalcluster.Path) client.Client {
 	t.Helper()
 	parent, ok := clusterName.Parent()
 	if !ok {
@@ -98,12 +94,12 @@ func createWorkspace(t *testing.T, clusterName logicalcluster.Name) client.Clien
 	}
 	c := loadClient(t, parent)
 	t.Logf("creating workspace %s", clusterName)
-	if err := c.Create(context.TODO(), &tenancyv1alpha1.ClusterWorkspace{
+	if err := c.Create(context.TODO(), &tenancyv1alpha1.Workspace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: clusterName.Base(),
 		},
-		Spec: tenancyv1alpha1.ClusterWorkspaceSpec{
-			Type: tenancyv1alpha1.ClusterWorkspaceTypeReference{
+		Spec: tenancyv1alpha1.WorkspaceSpec{
+			Type: tenancyv1alpha1.WorkspaceTypeReference{
 				Name: "universal",
 				Path: "root",
 			},
@@ -113,7 +109,7 @@ func createWorkspace(t *testing.T, clusterName logicalcluster.Name) client.Clien
 	}
 
 	t.Logf("waiting for workspace %s to be ready", clusterName)
-	var workspace tenancyv1alpha1.ClusterWorkspace
+	var workspace tenancyv1alpha1.Workspace
 	if err := wait.PollImmediate(100*time.Millisecond, wait.ForeverTestTimeout, func() (done bool, err error) {
 		fetchErr := c.Get(context.TODO(), client.ObjectKey{Name: clusterName.Base()}, &workspace)
 		if fetchErr != nil {
@@ -121,7 +117,7 @@ func createWorkspace(t *testing.T, clusterName logicalcluster.Name) client.Clien
 			return false, fetchErr
 		}
 		var reason string
-		if actual, expected := workspace.Status.Phase, tenancyv1alpha1.ClusterWorkspacePhaseReady; actual != expected {
+		if actual, expected := workspace.Status.Phase, corev1alpha1.LogicalClusterPhaseReady; actual != expected {
 			reason = fmt.Sprintf("phase is %s, not %s", actual, expected)
 			t.Logf("not done waiting for workspace %s to be ready: %s", clusterName, reason)
 		}
@@ -133,7 +129,7 @@ func createWorkspace(t *testing.T, clusterName logicalcluster.Name) client.Clien
 	return createAPIBinding(t, clusterName)
 }
 
-func createAPIBinding(t *testing.T, workspaceCluster logicalcluster.Name) client.Client {
+func createAPIBinding(t *testing.T, workspaceCluster logicalcluster.Path) client.Client {
 	c := loadClient(t, workspaceCluster)
 	apiName := "controller-runtime-example-data.my.domain"
 	t.Logf("creating APIBinding %s|%s", workspaceCluster, apiName)
@@ -142,28 +138,31 @@ func createAPIBinding(t *testing.T, workspaceCluster logicalcluster.Name) client
 			Name: apiName,
 		},
 		Spec: apisv1alpha1.APIBindingSpec{
-			Reference: apisv1alpha1.ExportReference{
-				Workspace: &apisv1alpha1.WorkspaceExportReference{
-					Path:       parentWorkspace(t).String(),
-					ExportName: apiName,
+			Reference: apisv1alpha1.BindingReference{
+				Export: &apisv1alpha1.ExportBindingReference{
+					Path: parentWorkspace(t).String(),
+					Name: apiName,
 				},
 			},
 			PermissionClaims: []apisv1alpha1.AcceptablePermissionClaim{
 				{
 					PermissionClaim: apisv1alpha1.PermissionClaim{
 						GroupResource: apisv1alpha1.GroupResource{Resource: "configmaps"},
+						All:           true,
 					},
 					State: apisv1alpha1.ClaimAccepted,
 				},
 				{
 					PermissionClaim: apisv1alpha1.PermissionClaim{
 						GroupResource: apisv1alpha1.GroupResource{Resource: "secrets"},
+						All:           true,
 					},
 					State: apisv1alpha1.ClaimAccepted,
 				},
 				{
 					PermissionClaim: apisv1alpha1.PermissionClaim{
 						GroupResource: apisv1alpha1.GroupResource{Resource: "namespaces"},
+						All:           true,
 					},
 					State: apisv1alpha1.ClaimAccepted,
 				},
