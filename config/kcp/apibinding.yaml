@@ -1,0 +1,22 @@
+apiVersion: apis.kcp.dev/v1alpha1
+kind: APIBinding
+# mind that the apibinding schema has changed between kcp v0.7 and v0.8
+# this is an example for v0.8
+metadata:
+  name: controller-runtime-example-data.my.domain
+spec:
+  reference:
+    workspace:
+      exportName: data.my.domain
+      # the path needs to match the workspace where the apiexport has been created
+      path: root:organisation:apiexport-ws
+  permissionClaims:
+  - group: ""
+    resource: "secrets"
+    state: Accepted
+  - group: ""
+    resource: "configmaps"
+    state: Accepted
+  - group: ""
+    resource: "namespaces"
+    state: Accepted
