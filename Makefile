@@ -33,6 +33,7 @@ KUSTOMIZE_VERSION ?= v3.8.7
 CONTROLLER_TOOLS_VERSION ?= v0.8.0
 KCP_VERSION ?= 0.11.0-alpha.0
 YQ_VERSION ?= v4.27.2
+KIND_VERSION ?= 0.19.0
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 $(KUSTOMIZE): ## Download kustomize locally if necessary.
@@ -146,6 +147,10 @@ kind-image: docker-build ## Load the controller-manager image into the kind clus
 	kind load docker-image $(REGISTRY)/$(IMG) --name controller-runtime-example
 
 $(ARTIFACT_DIR)/kind.kubeconfig: $(ARTIFACT_DIR) ## Run a kind cluster and generate a $KUBECONFIG for it.
+	if ! type "kind" > /dev/null; then \
+        wget -q -O /usr/local/bin/kind https://kind.sigs.k8s.io/dl/v${KIND_VERSION}/kind-linux-amd64 && \
+        chmod +x /usr/local/bin/kind; \
+	fi
 	@if ! kind get clusters --quiet | grep --quiet controller-runtime-example; then kind create cluster --name controller-runtime-example --image kindest/node:v1.24.2; fi
 	kind get kubeconfig --name controller-runtime-example > $(ARTIFACT_DIR)/kind.kubeconfig
 
