@@ -30,8 +30,8 @@ YQ ?= $(LOCALBIN)/yq
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v3.8.7
-CONTROLLER_TOOLS_VERSION ?= v0.8.0
-KCP_VERSION ?= 0.11.0-alpha.0
+CONTROLLER_TOOLS_VERSION ?= v0.14.0
+KCP_VERSION ?= 0.23.0
 YQ_VERSION ?= v4.27.2
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
