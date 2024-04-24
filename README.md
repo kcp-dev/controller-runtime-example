@@ -1,3 +1,7 @@
+# Deprecated
+
+Example code was moved into the [kcp-dev/controller-runtime](https://github.com/kcp-dev/controller-runtime/tree/kcp-0.17/examples/kcp) repository itself! 
+
 # controller-runtime-example
 An example project that is multi-cluster aware and works with [kcp](https://github.com/kcp-dev/kcp)
 
