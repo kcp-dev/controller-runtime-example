@@ -1,0 +1,26 @@
+presubmits:
+  - name: pull-controller-runtime-example-e2e
+    always_run: true
+    decorate: true
+    clone_uri: "ssh://git@github.com/kcp-dev/controller-runtime-example.git"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.19.9-2
+          command:
+            - make
+            - test-e2e
+
+  - name: pull-controller-runtime-example-unit
+    always_run: true
+    decorate: true
+    clone_uri: "ssh://git@github.com/kcp-dev/controller-runtime-example.git"
+    labels:
+      preset-goproxy: "true"
+    spec:
+      containers:
+        - image: ghcr.io/kcp-dev/infra/build:1.19.9-2
+          command:
+            - make
+            - test
