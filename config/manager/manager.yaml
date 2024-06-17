@@ -31,7 +31,7 @@ spec:
         - /manager
         args:
         - --api-export-name=data.my.domain
-        - --leader-elect
+        - --leader-elect=false
         image: controller:latest
         name: manager
         securityContext:
